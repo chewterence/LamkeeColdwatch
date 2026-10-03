@@ -49,7 +49,7 @@ INSERT INTO alert_config (key, value) VALUES
     ('no_reading_s', '300'),
     ('unit_off_for_s', '0'),
     ('remind_s', '3600'),
-    ('bad_remind_s', '900'),
+    ('bad_remind_s', '3600'),
     ('startup_grace_s', '180'),
     ('defrost_confirm_s', '45'),
     ('summary_times', '07:00,20:00'),

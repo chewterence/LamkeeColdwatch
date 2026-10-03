@@ -1,6 +1,6 @@
 # LamkeeColdwatch
 
-Monitoring for 17 coldrooms and freezers. A sensor server pushes readings over UDP about once a minute. They are stored in TimescaleDB. A Telegram bot alerts when a room is too warm, has no reading or its unit is off, sends summaries at 07:00 and 20:00 (Asia/Singapore) and answers /status, /room, /alerts and /help.
+Monitoring for 17 coldrooms and freezers. A sensor server pushes readings over UDP about once a minute. They are stored in TimescaleDB. A Telegram bot alerts when a room is too warm, has no reading or its unit is off, sends a /status-style summary with a Good Morning or Good Evening greeting at 07:00 and 20:00 (Asia/Singapore) and answers /status, /room, /alerts and /help.
 
 ## Status
 
@@ -68,7 +68,7 @@ Thresholds are shared by all rooms (table `alert_config`).
 
 | Alert | When | Icon |
 | --- | --- | --- |
-| BAD | Warmer than -12°C for 120 min in a row. STILL BAD repeats every 15 min | ❗ |
+| BAD | Warmer than -12°C for 120 min in a row. STILL BAD repeats hourly | ❗ |
 | CRITICAL | No reading for 5 min, or the unit is off (immediate). STILL CRITICAL repeats hourly | ❌ / 🔁 |
 | RECOVERED | The problem is over, with how long it lasted | ✅ |
 

@@ -26,7 +26,7 @@ class Config:
     no_reading_s: int = 300
     unit_off_for_s: int = 0
     remind_s: int = 3600  # CRITICAL reminders
-    bad_remind_s: int = 900  # BAD reminders
+    bad_remind_s: int = 3600  # BAD reminders
     startup_grace_s: int = 180
     defrost_confirm_s: int = 45  # a defrost change must hold this long (about 2 readings)
     summary_times: tuple = ("07:00", "20:00")
@@ -304,30 +304,10 @@ def due_summary_slot(now: datetime, cfg: Config, last_slot: str) -> str | None:
 
 
 def format_summary(now: datetime, cfg: Config, rows: list, last_packet_age_s: float | None) -> str:
-    """rows: dicts with name, code, status, temp, on, lo, hi (24 h min/max)."""
-    local = now.astimezone(ZoneInfo(cfg.summary_tz))
-    lines = [f"📋 Coldwatch summary • {local.strftime('%a %-d %b %H:%M')}"]
-    if last_packet_age_s is None:
-        lines.append("Last packet: none received")
-    else:
-        lines.append(f"Last packet: {fmt_duration(last_packet_age_s) if last_packet_age_s >= 60 else f'{int(last_packet_age_s)} s'} ago")
-
-    def line(r):
-        t = f"{r['temp']:.1f}°C" if r["temp"] is not None else "no reading"
-        extra = " • UNIT OFF" if r["on"] is not None and r["on"] < 0.5 else ""
-        extra += " • 🧊 DEFROSTING" if r.get("defrost") else ""
-        rng = f" (24 h {r['lo']:.1f} to {r['hi']:.1f})" if r["lo"] is not None else ""
-        return f"• {r['name']}: {t}{rng}{extra}"
-
-    def off(r):
-        return r["on"] is not None and r["on"] < 0.5
-
-    problems = [r for r in rows if r["status"] in (BAD_S, CRITICAL_S) or off(r)]
-    good = [r for r in rows if r["status"] == GOOD_S and r not in problems]
-    if problems:
-        lines += ["", f"❌ Problems ({len(problems)})"] + [line(r) for r in problems]
-    lines += ["", f"✅ Good ({len(good)})"] + [line(r) for r in good]
-    return "\n".join(lines)
+    """The scheduled summary is /status with a greeting on top."""
+    morning = now.astimezone(ZoneInfo(cfg.summary_tz)).hour < 12
+    greeting = "Good Morning ☀️" if morning else "Good Evening 🌙"
+    return f"{greeting}\n{format_status(now, cfg, rows, last_packet_age_s)}"
 
 
 _STATUS_ICON = {GOOD_S: "✅", BAD_S: "⚠️", CRITICAL_S: "❌"}

@@ -197,15 +197,15 @@ def test_summary_slots():
     assert due_summary_slot(at(20, 1), CFG, "2026-10-03T07:00") == "2026-10-03T20:00"
 
 
-def test_summary_lists_problems_first():
+def test_summary_is_status_with_a_greeting():
     rows = [
         {"code": "RS1-001", "name": "Room 1", "status": GOOD_S, "temp": -18.2, "on": 1.0, "lo": -19.0, "hi": -17.0},
         {"code": "RS1-011", "name": "Room 8", "status": BAD_S, "temp": -8.4, "on": 1.0, "lo": -18.0, "hi": -8.0},
-        {"code": "RS1-002", "name": "Room 2", "status": GOOD_S, "temp": -17.0, "on": 0.0, "lo": None, "hi": None},
     ]
-    text = format_summary(T0, CFG, rows, 12)
-    assert text.index("Problems (2)") < text.index("Good (1)")
-    assert "Last packet: 12 s ago" in text and "UNIT OFF" in text
+    morning = format_summary(T0, CFG, rows, 12)  # 08:00 Singapore
+    assert morning == "Good Morning ☀️\n" + format_status(T0, CFG, rows, 12)
+    evening_at = T0.replace(hour=12)  # 20:00 Singapore
+    assert format_summary(evening_at, CFG, rows, 12) == "Good Evening 🌙\n" + format_status(evening_at, CFG, rows, 12)
 
 
 def test_format_status_groups_rooms_and_puts_date_last():
@@ -432,13 +432,13 @@ def test_paused_alert_keeps_original_start_time():
     assert st.last_notified_at == now
 
 
-# --- DEFAULTS: the live rules (BAD above -12C for 2 h, STILL BAD every 15 min, CRITICAL hourly) ---
+# --- DEFAULTS: the live rules (BAD above -12C for 2 h, STILL BAD hourly, CRITICAL hourly) ---
 
 DEF = Config()
 
 
 def test_defaults_are_the_live_rules():
-    assert (DEF.bad_min_c, DEF.bad_for_s, DEF.bad_remind_s, DEF.remind_s) == (-12.0, 7200, 900, 3600)
+    assert (DEF.bad_min_c, DEF.bad_for_s, DEF.bad_remind_s, DEF.remind_s) == (-12.0, 7200, 3600, 3600)
 
 
 def test_default_bad_threshold_boundary():
@@ -447,10 +447,10 @@ def test_default_bad_threshold_boundary():
     assert room_status(T0, room(-13), DEF) == GOOD_S
 
 
-def test_default_bad_waits_two_hours_then_repeats_every_fifteen_minutes():
-    res, _ = run([(m, {"temp": -8.0}) for m in range(0, 170)], cfg=DEF)
+def test_default_bad_waits_two_hours_then_repeats_hourly():
+    res, _ = run([(m, {"temp": -8.0}) for m in range(0, 250)], cfg=DEF)
     seen = [(m, e.type) for m, evs in res for e in evs]
-    assert seen == [(120, OPEN), (135, REMIND), (150, REMIND), (165, REMIND)]
+    assert seen == [(120, OPEN), (180, REMIND), (240, REMIND)]
 
 
 def test_default_warm_for_under_two_hours_never_alerts():
@@ -459,10 +459,10 @@ def test_default_warm_for_under_two_hours_never_alerts():
 
 
 def test_default_bad_messages_use_exclamation_icon():
-    res, _ = run([(m, {"temp": -8.4}) for m in range(0, 136)], cfg=DEF)
+    res, _ = run([(m, {"temp": -8.4}) for m in range(0, 196)], cfg=DEF)
     opened, still = [e for _, evs in res for e in evs]
     assert format_event(opened, "Room 8") == "❗ BAD\n**Room 8 (RS1-011)**\n-8.4°C for 2 h"
-    assert format_event(still, "Room 8") == "❗ STILL BAD\n**Room 8 (RS1-011)**\n-8.4°C for 2 h 15 min"
+    assert format_event(still, "Room 8") == "❗ STILL BAD\n**Room 8 (RS1-011)**\n-8.4°C for 3 h"
 
 
 def test_critical_reminders_stay_hourly_with_old_icon():

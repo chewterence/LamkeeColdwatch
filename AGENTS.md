@@ -48,13 +48,13 @@ Room names are user-editable via `PUT /rooms/{code}`.
 
 Thresholds are shared by all rooms and live in the `alert_config` table.
 
-- BAD: warmer than -12°C for 120 min in a row. STILL BAD repeats every 15 min. Both use ❗. /status, /room and the summary use ⚠️.
+- BAD: warmer than -12°C for 120 min in a row. STILL BAD repeats hourly. Both use ❗. /status, /room and the summary use ⚠️.
 - CRITICAL (❌, STILL CRITICAL hourly with 🔁): no reading for 5 min, or UNIT OFF (immediate).
 - RECOVERED (✅) closes an alert and says how long the room was too warm, had no reading or was off.
 - 3 min startup grace after the notifier starts.
 - Defrost: while a room defrosts, BAD alerts pause and /status shows 🧊 DEFROSTING. Defrost value 1 = active is unconfirmed. START/FINISHED DEFROST messages are off (`NOTIFY_DEFROST = False` in `main.py`).
 - System-wide no-data alert (no packet from any sensor) is admin-only and off (`NOTIFY_SYSTEM = False`). While no data flows, room alerts pause and /status and /room reply "No data from any sensor, temporarily fixing the problem...".
-- Summaries at 07:00 and 20:00 Asia/Singapore.
+- Summaries at 07:00 and 20:00 Asia/Singapore: the /status message with a "Good Morning ☀️" or "Good Evening 🌙" line on top.
 - Slash commands: /status, /room, /alerts, /help. Only the two configured chats are answered.
 
 Routing (`emit()` in `main.py`):
