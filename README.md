@@ -1,6 +1,12 @@
 # LamkeeColdwatch
 
-Monitoring for 17 coldrooms and freezers. A sensor server pushes readings over UDP about once a minute. They are stored in TimescaleDB. A Telegram bot alerts when a room is too warm, has no reading or its unit is off, sends a /status-style summary with a Good Morning or Good Evening greeting at 07:00 and 20:00 (Asia/Singapore) and answers /status, /room, /alerts and /help.
+Cold-room monitoring for 17 coldrooms and freezers. A sensor server pushes temperature, on/off and defrost readings over UDP about once a minute. A FastAPI service stores them in TimescaleDB and a Telegram notifier watches them.
+
+- **Alerts:** warns when a room stays too warm, has no reading or its unit is off. Reminders repeat hourly until the problem is fixed, then a recovery message says how long it lasted. Alerts pause during defrost.
+- **Summaries:** a /status-style summary with a Good Morning or Good Evening greeting at 07:00 and 20:00 (Asia/Singapore).
+- **Bot commands:** /status, /room, /alerts and /help.
+- **Routing:** alerts go to a users group and an admin chat. Some, such as no-reading alerts, go only to the admin.
+- **Stack:** Docker Compose, Python, FastAPI, asyncio UDP, TimescaleDB (Postgres 16) and Telegram.
 
 ## Status
 

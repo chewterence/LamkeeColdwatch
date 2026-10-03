@@ -6,6 +6,8 @@ Guidance for AI coding agents working on LamkeeColdwatch.
 
 LamkeeColdwatch monitors 17 coldrooms and freezers. It alerts through Telegram when a room is too warm, has no reading or its unit is off, sends summaries, and answers slash commands.
 
+Stack: Docker Compose, Python, FastAPI, asyncio UDP, TimescaleDB (Postgres 16) and Telegram.
+
 A sensor server (192.168.1.250) pushes UDP data about every 60s to the ingest container (port 2049), which stores it in TimescaleDB.
 
 ## Layout
