@@ -1,4 +1,4 @@
-"""Telegram slash commands (python-telegram-bot). Answers only TELEGRAM_CHAT_ID.
+"""Telegram slash commands (python-telegram-bot). Answers only TELEGRAM_CHAT_ID and TELEGRAM_ADMIN_CHAT_ID.
 
 Alerts do not depend on this: if the bot fails, main keeps evaluating and sending.
 """
@@ -33,11 +33,21 @@ async def _snapshot(pool):
     return now, cfg, rooms, age
 
 
-def build_application(token: str, chat_id: int, pool) -> Application:
-    only_me = filters.Chat(chat_id=chat_id)
+NO_DATA_REPLY = "No data from any sensor, temporarily fixing the problem..."
+
+
+def _no_data(cfg, age) -> bool:
+    return age is None or age >= cfg.no_reading_s
+
+
+def build_application(token: str, chat_ids: list, pool) -> Application:
+    only_me = filters.Chat(chat_id=chat_ids)
 
     async def status(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         now, cfg, rooms, age = await _snapshot(pool)
+        if _no_data(cfg, age):
+            await update.effective_message.reply_text(NO_DATA_REPLY)
+            return
         rows = await build_rows(pool, rooms, cfg, now)
         await update.effective_message.reply_text(telegram_html(format_status(now, cfg, rows, age)), parse_mode="HTML")
 
@@ -45,7 +55,10 @@ def build_application(token: str, chat_id: int, pool) -> Application:
         if not ctx.args:
             await update.effective_message.reply_text("Which room? Example: /room 8")
             return
-        now, cfg, rooms, _ = await _snapshot(pool)
+        now, cfg, rooms, age = await _snapshot(pool)
+        if _no_data(cfg, age):
+            await update.effective_message.reply_text(NO_DATA_REPLY)
+            return
         hits = find_rooms(rooms, " ".join(ctx.args))
         if not hits:
             await update.effective_message.reply_text("No room matches that. Try /status to see names.")
@@ -78,12 +91,12 @@ def build_application(token: str, chat_id: int, pool) -> Application:
     return app
 
 
-async def run_bot(token: str, chat_id: str, pool):
+async def run_bot(token: str, chat_id: str, pool, admin_id: str = ""):
     """Poll for commands forever; retry if startup fails so alerts are never affected."""
     try:
-        cid = int(chat_id)
+        cid = [int(chat_id)] + ([int(admin_id)] if admin_id else [])
     except ValueError:
-        log.warning("TELEGRAM_CHAT_ID is not a number: bot commands disabled")
+        log.warning("TELEGRAM_CHAT_ID / TELEGRAM_ADMIN_CHAT_ID is not a number: bot commands disabled")
         return
     while True:
         try:

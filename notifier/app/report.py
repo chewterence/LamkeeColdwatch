@@ -1,6 +1,6 @@
 """Room snapshot shared by the summary and the bot commands."""
 from . import db
-from .logic import room_status
+from .logic import defrosting, room_status
 
 
 async def build_rows(pool, rooms: dict, cfg, now) -> list:
@@ -12,6 +12,7 @@ async def build_rows(pool, rooms: dict, cfg, now) -> list:
             "code": r.code, "name": r.name, "status": room_status(now, r, cfg),
             "temp": r.temp.value if r.temp else None,
             "on": r.on.value if r.on else None, "lo": lo, "hi": hi,
+            "defrost": bool(defrosting(now, r, cfg)),
             "age": (now - r.temp.time).total_seconds() if r.temp else None,
         })
     return rows

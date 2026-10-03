@@ -27,6 +27,9 @@ def telegram_html(text: str) -> str:
     return _ITALIC.sub(r"<i>\1</i>", text)
 
 
+ADMIN_CHANNEL = "telegram-admin"  # debug messages only; everything else goes to "telegram"
+
+
 class LogSender:
     name = "log"
 
@@ -35,9 +38,8 @@ class LogSender:
 
 
 class TelegramSender:
-    name = "telegram"
-
-    def __init__(self, token: str, chat_id: str):
+    def __init__(self, token: str, chat_id: str, name: str = "telegram"):
+        self.name = name
         self._url = f"https://api.telegram.org/bot{token}/sendMessage"
         self._chat_id = chat_id
 
@@ -63,6 +65,9 @@ def enabled_senders() -> list:
     chat = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
     if token and chat:
         senders.append(TelegramSender(token, chat))
+        admin = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "").strip()
+        if admin and admin != chat:
+            senders.append(TelegramSender(token, admin, ADMIN_CHANNEL))
     elif token:
         log.warning("TELEGRAM_BOT_TOKEN is set but TELEGRAM_CHAT_ID is empty: Telegram disabled")
     return senders

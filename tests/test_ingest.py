@@ -128,7 +128,7 @@ def test_parse_too_short(parse):
 def test_sensors_table_is_contiguous():
     sensors = active_sensors()
     assert [p for p, _, _ in sensors] == list(range(len(sensors)))
-    assert len(sensors) == 34
+    assert len(sensors) == 51
 
 
 def test_all_17_rooms_configured():
@@ -196,7 +196,7 @@ def test_listener_survives_bad_packet():
     send(packet(["1.0"] * len(active_sensors())))
     pid, err = wait_for_packet()
     assert err == ""
-    assert len(readings(pid)) == 34
+    assert len(readings(pid)) == 51
 
 
 def test_sensor_time_is_stored():

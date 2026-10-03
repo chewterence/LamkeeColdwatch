@@ -3,7 +3,7 @@
 CREATE TABLE sensors (
     position       INT PRIMARY KEY,
     code           TEXT NOT NULL,
-    point          TEXT NOT NULL DEFAULT 'temp',  -- 'temp' (Probe 1) or 'on'
+    point          TEXT NOT NULL DEFAULT 'temp',  -- 'temp' (Probe 1), 'on', 'defrost' or 'defrost_st'
     name           TEXT NOT NULL,
     high_threshold DOUBLE PRECISION,
     active         BOOLEAN NOT NULL DEFAULT true,
@@ -32,6 +32,13 @@ INSERT INTO sensors (position, code, name) VALUES
 -- Positions 17-33: the 'On' status of each room, same order as above.
 INSERT INTO sensors (position, code, point, name)
 SELECT position + 17, code, 'on', name FROM sensors WHERE point = 'temp';
+
+-- Positions 34-50: the defrost status of each room, same order as above.
+-- The last three rooms (Blast Freezer, Room 7 System 1/2) use the Defrost_st point.
+INSERT INTO sensors (position, code, point, name)
+SELECT position + 34, code,
+       CASE WHEN position >= 14 THEN 'defrost_st' ELSE 'defrost' END, name
+FROM sensors WHERE point = 'temp';
 
 -- One row per UDP datagram, kept verbatim.
 CREATE TABLE packets (

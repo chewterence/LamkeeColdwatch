@@ -44,13 +44,15 @@ CREATE TABLE IF NOT EXISTS alert_deliveries (
 CREATE INDEX IF NOT EXISTS alert_deliveries_pending_idx
     ON alert_deliveries (next_attempt_at) WHERE status = 'pending';
 INSERT INTO alert_config (key, value) VALUES
-    ('bad_min_c', '-14'),
-    ('bad_for_s', '600'),
+    ('bad_min_c', '-12'),
+    ('bad_for_s', '7200'),
     ('no_reading_s', '300'),
     ('unit_off_for_s', '0'),
     ('remind_s', '3600'),
+    ('bad_remind_s', '900'),
     ('startup_grace_s', '180'),
-    ('summary_times', '08:00,18:00'),
+    ('defrost_confirm_s', '45'),
+    ('summary_times', '07:00,20:00'),
     ('summary_tz', 'Asia/Singapore')
 ON CONFLICT (key) DO NOTHING;
 """
@@ -87,7 +89,8 @@ async def load_rooms(pool) -> dict:
         )
         latest = {(r[0], r[1]): Reading(r[2], r[3], r[4]) for r in await cur.fetchall()}
     return {
-        code: Room(code, name, latest.get((code, "temp")), latest.get((code, "on")))
+        code: Room(code, name, latest.get((code, "temp")), latest.get((code, "on")),
+                   latest.get((code, "defrost")) or latest.get((code, "defrost_st")))
         for code, name in names
     }
 
@@ -166,6 +169,16 @@ async def due_deliveries(pool, channels):
             (list(channels),),
         )
         return await cur.fetchall()
+
+
+async def skip_pending(pool, channel):
+    """Drop queued deliveries for a channel (used while it is paused)."""
+    async with pool.connection() as conn:
+        await conn.execute(
+            "UPDATE alert_deliveries SET status='skipped', last_error='paused' "
+            "WHERE channel=%s AND status='pending'",
+            (channel,),
+        )
 
 
 MAX_ATTEMPTS = 30
