@@ -1,0 +1,31 @@
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - coldwatch_db:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ingest:
+    build: ./ingest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    ports:
+      - "${INGEST_BIND_IP:-0.0.0.0}:${INGEST_PORT:-8000}:8000"
+      - "${INGEST_BIND_IP:-0.0.0.0}:${UDP_PORT:-2049}:2049/udp"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  coldwatch_db:
